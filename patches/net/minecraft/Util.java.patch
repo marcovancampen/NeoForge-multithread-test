@@ -1,5 +1,14 @@
 --- a/net/minecraft/Util.java
 +++ b/net/minecraft/Util.java
+@@ -147,7 +_,7 @@
+     }
+ 
+     private static ExecutorService makeExecutor(String p_137478_) {
+-        int i = Mth.clamp(Runtime.getRuntime().availableProcessors() - 1, 1, getMaxThreads());
++        int i = Mth.clamp(Runtime.getRuntime().availableProcessors() - 2, 1, getMaxThreads());
+         ExecutorService executorservice;
+         if (i <= 0) {
+             executorservice = MoreExecutors.newDirectExecutorService();
 @@ -267,8 +_,8 @@
                  .getSchema(DataFixUtils.makeKey(SharedConstants.getCurrentVersion().getDataVersion().getVersion()))
                  .getChoiceType(p_137552_, p_137553_);

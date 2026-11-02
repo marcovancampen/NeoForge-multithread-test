@@ -1,5 +1,16 @@
 --- a/net/minecraft/world/level/chunk/ChunkAccess.java
 +++ b/net/minecraft/world/level/chunk/ChunkAccess.java
+@@ -67,8 +_,9 @@
+     protected final ChunkPos chunkPos;
+     private long inhabitedTime;
+     @Nullable
++    //added volitle to this field due to multithreading. allows it to be pushed to main thread.
+     @Deprecated
+-    private BiomeGenerationSettings carverBiomeSettings;
++    private volatile BiomeGenerationSettings carverBiomeSettings;
+     @Nullable
+     protected NoiseChunk noiseChunk;
+     protected final UpgradeData upgradeData;
 @@ -315,10 +_,19 @@
  
      @Override

@@ -1,0 +1,30 @@
+--- a/net/minecraft/world/level/chunk/ChunkGeneratorStructureState.java
++++ b/net/minecraft/world/level/chunk/ChunkGeneratorStructureState.java
+@@ -39,7 +_,7 @@
+     private final long concentricRingsSeed;
+     private final Map<Structure, List<StructurePlacement>> placementsForStructure = new Object2ObjectOpenHashMap<>();
+     private final Map<ConcentricRingsStructurePlacement, CompletableFuture<List<ChunkPos>>> ringPositions = new Object2ObjectArrayMap<>();
+-    private boolean hasGeneratedPositions;
++    private volatile boolean hasGeneratedPositions;
+     private final List<Holder<StructureSet>> possibleStructureSets;
+ 
+     public static ChunkGeneratorStructureState createForFlat(
+@@ -166,11 +_,15 @@
+             });
+         }
+     }
+-
++//double checked locking
+     public void ensureStructuresGenerated() {
+         if (!this.hasGeneratedPositions) {
+-            this.generatePositions();
+-            this.hasGeneratedPositions = true;
++            synchronized (this) {
++                if (!this.hasGeneratedPositions) {
++                    this.generatePositions();
++                    this.hasGeneratedPositions = true;
++                }
++            }
+         }
+     }
+ 

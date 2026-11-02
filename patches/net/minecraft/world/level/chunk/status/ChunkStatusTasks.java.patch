@@ -1,24 +1,264 @@
 --- a/net/minecraft/world/level/chunk/status/ChunkStatusTasks.java
 +++ b/net/minecraft/world/level/chunk/status/ChunkStatusTasks.java
-@@ -201,10 +_,21 @@
-                 }
+@@ -31,24 +_,30 @@
+     ) {
+         return CompletableFuture.completedFuture(p_347612_);
+     }
++    //(WorldGenContext) p_331858_ world gen context, light engine and stuff
++    //(chunkstep) p_347728_ target?
++    //(StaticCache2D<GenerationChunkHolder>) p_347581_ 2d grid of surrounding chunks
++    //(chunkAcess) p_330818_ is the chunk itself that is being generated
  
-                 levelchunk.setFullStatus(generationchunkholder::getFullStatus);
-+                try {
-+                generationchunkholder.currentlyLoading = levelchunk; // Neo: bypass the future chain when getChunk is called, this prevents deadlocks.
-                 levelchunk.runPostLoad();
-+                } finally {
-+                    generationchunkholder.currentlyLoading = null; // Neo: Stop bypassing the future chain.
+     static CompletableFuture<ChunkAccess> generateStructureStarts(
+         WorldGenContext p_331607_, ChunkStep p_347505_, StaticCache2D<GenerationChunkHolder> p_347639_, ChunkAccess p_330224_
+     ) {
+-        ServerLevel serverlevel = p_331607_.level();
+-        if (serverlevel.getServer().getWorldData().worldGenOptions().generateStructures()) {
+-            p_331607_.generator()
+-                .createStructures(
+-                    serverlevel.registryAccess(),
+-                    serverlevel.getChunkSource().getGeneratorState(),
+-                    serverlevel.structureManager(),
+-                    p_330224_,
+-                    p_331607_.structureManager()
+-                );
+-        }
++        return CompletableFuture.supplyAsync(() -> {
++            ServerLevel serverlevel = p_331607_.level();
++            if (serverlevel.getServer().getWorldData().worldGenOptions().generateStructures()) {
++                p_331607_.generator()
++                        .createStructures(
++                                serverlevel.registryAccess(),
++                                serverlevel.getChunkSource().getGeneratorState(),
++                                serverlevel.structureManager(),
++                                p_330224_,
++                                p_331607_.structureManager()
++                        );
++            }
+ 
+-        serverlevel.onStructureStartsAvailable(p_330224_);
+-        return CompletableFuture.completedFuture(p_330224_);
++            serverlevel.onStructureStartsAvailable(p_330224_);
++            return p_330224_;
++        }, net.minecraft.Util.backgroundExecutor());
+     }
+ 
+     static CompletableFuture<ChunkAccess> loadStructureStarts(
+@@ -61,10 +_,13 @@
+     static CompletableFuture<ChunkAccess> generateStructureReferences(
+         WorldGenContext p_331037_, ChunkStep p_347588_, StaticCache2D<GenerationChunkHolder> p_347555_, ChunkAccess p_331453_
+     ) {
+-        ServerLevel serverlevel = p_331037_.level();
+-        WorldGenRegion worldgenregion = new WorldGenRegion(serverlevel, p_347555_, p_347588_, p_331453_);
+-        p_331037_.generator().createReferences(worldgenregion, serverlevel.structureManager().forWorldGenRegion(worldgenregion), p_331453_);
+-        return CompletableFuture.completedFuture(p_331453_);
++
++        return CompletableFuture.supplyAsync(() -> {
++            ServerLevel serverlevel = p_331037_.level();
++            WorldGenRegion worldgenregion = new WorldGenRegion(serverlevel, p_347555_, p_347588_, p_331453_);
++            p_331037_.generator().createReferences(worldgenregion, serverlevel.structureManager().forWorldGenRegion(worldgenregion), p_331453_);
++            return p_331453_;
++        }, net.minecraft.Util.backgroundExecutor());
+     }
+ 
+     static CompletableFuture<ChunkAccess> generateBiomes(
+@@ -109,51 +_,83 @@
+     }
+ 
+     static CompletableFuture<ChunkAccess> generateSurface(
+-        WorldGenContext p_331468_, ChunkStep p_347720_, StaticCache2D<GenerationChunkHolder> p_347636_, ChunkAccess p_331100_
++            WorldGenContext p_331468_, ChunkStep p_347720_, StaticCache2D<GenerationChunkHolder> p_347636_, ChunkAccess p_331100_
+     ) {
+-        ServerLevel serverlevel = p_331468_.level();
+-        WorldGenRegion worldgenregion = new WorldGenRegion(serverlevel, p_347636_, p_347720_, p_331100_);
+-        p_331468_.generator()
+-            .buildSurface(
+-                worldgenregion, serverlevel.structureManager().forWorldGenRegion(worldgenregion), serverlevel.getChunkSource().randomState(), p_331100_
+-            );
+-        return CompletableFuture.completedFuture(p_331100_);
++        return CompletableFuture.supplyAsync(() -> {
++            ServerLevel serverlevel = p_331468_.level();
++            WorldGenRegion worldgenregion = new WorldGenRegion(serverlevel, p_347636_, p_347720_, p_331100_);
++            p_331468_.generator()
++                    .buildSurface(
++                            worldgenregion, serverlevel.structureManager().forWorldGenRegion(worldgenregion), serverlevel.getChunkSource().randomState(), p_331100_
++                    );
++            return p_331100_;
++        }, net.minecraft.Util.backgroundExecutor());
+     }
+ 
+     static CompletableFuture<ChunkAccess> generateCarvers(
+-        WorldGenContext p_331858_, ChunkStep p_347728_, StaticCache2D<GenerationChunkHolder> p_347581_, ChunkAccess p_330818_
++            WorldGenContext p_331858_, ChunkStep p_347728_, StaticCache2D<GenerationChunkHolder> p_347581_, ChunkAccess p_330818_
+     ) {
+-        ServerLevel serverlevel = p_331858_.level();
+-        WorldGenRegion worldgenregion = new WorldGenRegion(serverlevel, p_347581_, p_347728_, p_330818_);
+-        if (p_330818_ instanceof ProtoChunk protochunk) {
+-            Blender.addAroundOldChunksCarvingMaskFilter(worldgenregion, protochunk);
+-        }
+-
+-        p_331858_.generator()
+-            .applyCarvers(
+-                worldgenregion,
+-                serverlevel.getSeed(),
+-                serverlevel.getChunkSource().randomState(),
+-                serverlevel.getBiomeManager(),
+-                serverlevel.structureManager().forWorldGenRegion(worldgenregion),
+-                p_330818_,
+-                GenerationStep.Carving.AIR
+-            );
+-        return CompletableFuture.completedFuture(p_330818_);
++        return CompletableFuture.supplyAsync(() -> {
++            ServerLevel serverlevel = p_331858_.level();
++            WorldGenRegion worldgenregion = new WorldGenRegion(serverlevel, p_347581_, p_347728_, p_330818_);
++            if (p_330818_ instanceof ProtoChunk protochunk) {
++                Blender.addAroundOldChunksCarvingMaskFilter(worldgenregion, protochunk);
++            }
++            p_331858_.generator()
++                    .applyCarvers(
++                            worldgenregion,
++                            serverlevel.getSeed(),
++                            serverlevel.getChunkSource().randomState(),
++                            serverlevel.getBiomeManager(),
++                            serverlevel.structureManager().forWorldGenRegion(worldgenregion),
++                            p_330818_,
++                            GenerationStep.Carving.AIR
++                    );
++            return p_330818_;
++        }, net.minecraft.Util.backgroundExecutor());
+     }
++
++    private static final java.util.concurrent.locks.ReentrantLock[] FEATURE_LOCKS = java.util.stream.Stream
++            .generate(java.util.concurrent.locks.ReentrantLock::new)
++            .limit(4096)
++            .toArray(java.util.concurrent.locks.ReentrantLock[]::new);
+ 
+     static CompletableFuture<ChunkAccess> generateFeatures(
+-        WorldGenContext p_330280_, ChunkStep p_347560_, StaticCache2D<GenerationChunkHolder> p_347674_, ChunkAccess p_332040_
++            WorldGenContext p_330280_, ChunkStep p_347560_, StaticCache2D<GenerationChunkHolder> p_347674_, ChunkAccess p_332040_
+     ) {
+-        ServerLevel serverlevel = p_330280_.level();
+-        Heightmap.primeHeightmaps(
+-            p_332040_,
+-            EnumSet.of(Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Heightmap.Types.OCEAN_FLOOR, Heightmap.Types.WORLD_SURFACE)
+-        );
+-        WorldGenRegion worldgenregion = new WorldGenRegion(serverlevel, p_347674_, p_347560_, p_332040_);
+-        p_330280_.generator().applyBiomeDecoration(worldgenregion, p_332040_, serverlevel.structureManager().forWorldGenRegion(worldgenregion));
+-        Blender.generateBorderTicks(worldgenregion, p_332040_);
+-        return CompletableFuture.completedFuture(p_332040_);
++        return CompletableFuture.supplyAsync(() -> {
++            ChunkPos chunkpos = p_332040_.getPos();
++            int[] locks = new int[9];
++            int idx = 0;
++            for (int dx = -1; dx <= 1; dx++) {
++                for (int dz = -1; dz <= 1; dz++) {
++                    locks[idx++] = ChunkPos.hash(chunkpos.x + dx, chunkpos.z + dz) & (FEATURE_LOCKS.length - 1);
 +                }
-                 levelchunk.setLoaded(true);
-+                try {
-+                generationchunkholder.currentlyLoading = levelchunk; // Neo: bypass the future chain when getChunk is called, this prevents deadlocks.
-                 levelchunk.registerAllBlockEntitiesAfterLevelLoad();
-                 levelchunk.registerTickContainerInLevel(serverlevel);
-+                net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(new net.neoforged.neoforge.event.level.ChunkEvent.Load(levelchunk, !(protochunk instanceof ImposterProtoChunk)));
-+                } finally {
-+                    generationchunkholder.currentlyLoading = null; // Neo: Stop bypassing the future chain.
++            }
++            java.util.Arrays.sort(locks);
++            for (int i = 0; i < locks.length; i++) {
++                if (i == 0 || locks[i] != locks[i - 1]) {
++                    FEATURE_LOCKS[locks[i]].lock();
 +                }
-                 return levelchunk;
-             },
-             p_347404_ -> p_347565_.mainThreadMailBox()
++            }
++            try {
++                ServerLevel serverlevel = p_330280_.level();
++                Heightmap.primeHeightmaps(
++                        p_332040_,
++                        EnumSet.of(Heightmap.Types.MOTION_BLOCKING, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Heightmap.Types.OCEAN_FLOOR, Heightmap.Types.WORLD_SURFACE)
++                );
++                WorldGenRegion worldgenregion = new WorldGenRegion(serverlevel, p_347674_, p_347560_, p_332040_);
++                p_330280_.generator().applyBiomeDecoration(worldgenregion, p_332040_, serverlevel.structureManager().forWorldGenRegion(worldgenregion));
++                Blender.generateBorderTicks(worldgenregion, p_332040_);
++                return p_332040_;
++            } finally {
++                for (int i = locks.length - 1; i >= 0; i--) {
++                    if (i == 0 || locks[i] != locks[i - 1]) {
++                        FEATURE_LOCKS[locks[i]].unlock();
++                    }
++                }
++            }
++        }, net.minecraft.Util.backgroundExecutor());
+     }
+ 
+     static CompletableFuture<ChunkAccess> initializeLight(
+@@ -183,32 +_,56 @@
+         return CompletableFuture.completedFuture(p_331907_);
+     }
+ 
+-    static CompletableFuture<ChunkAccess> full(
+-        WorldGenContext p_347565_, ChunkStep p_347455_, StaticCache2D<GenerationChunkHolder> p_347586_, ChunkAccess p_347656_
++    static java.util.concurrent.CompletableFuture<ChunkAccess> full(
++            WorldGenContext p_347565_, ChunkStep p_347455_, StaticCache2D<GenerationChunkHolder> p_347586_, ChunkAccess p_347656_
+     ) {
+         ChunkPos chunkpos = p_347656_.getPos();
+         GenerationChunkHolder generationchunkholder = p_347586_.get(chunkpos.x, chunkpos.z);
+-        return CompletableFuture.supplyAsync(
+-            () -> {
+-                ProtoChunk protochunk = (ProtoChunk)p_347656_;
+-                ServerLevel serverlevel = p_347565_.level();
+-                LevelChunk levelchunk;
+-                if (protochunk instanceof ImposterProtoChunk) {
+-                    levelchunk = ((ImposterProtoChunk)protochunk).getWrapped();
+-                } else {
+-                    levelchunk = new LevelChunk(serverlevel, protochunk, p_347400_ -> postLoadProtoChunk(serverlevel, protochunk.getEntities()));
+-                    generationchunkholder.replaceProtoChunk(new ImposterProtoChunk(levelchunk, false));
+-                }
+-
+-                levelchunk.setFullStatus(generationchunkholder::getFullStatus);
+-                levelchunk.runPostLoad();
+-                levelchunk.setLoaded(true);
+-                levelchunk.registerAllBlockEntitiesAfterLevelLoad();
+-                levelchunk.registerTickContainerInLevel(serverlevel);
+-                return levelchunk;
+-            },
+-            p_347404_ -> p_347565_.mainThreadMailBox()
+-                    .tell(ChunkTaskPriorityQueueSorter.message(p_347404_, chunkpos.toLong(), generationchunkholder::getTicketLevel))
++
++        //Heavy object construction and heightmap calculation on background worker pool
++        return java.util.concurrent.CompletableFuture.supplyAsync(
++                () -> {
++                    ProtoChunk protochunk = (ProtoChunk)p_347656_;
++                    ServerLevel serverlevel = p_347565_.level();
++                    LevelChunk levelchunk;
++                    if (protochunk instanceof ImposterProtoChunk) {
++                        levelchunk = ((ImposterProtoChunk)protochunk).getWrapped();
++                    } else {
++                        levelchunk = new LevelChunk(serverlevel, protochunk, p_347400_ -> postLoadProtoChunk(serverlevel, protochunk.getEntities()));
++                    }
++                    return levelchunk;
++                },
++                net.minecraft.Util.backgroundExecutor()
++        ).thenApplyAsync(
++
++                //Registration into ServerLevel and event firing on the main thread
++
++                levelchunk -> {
++                    ProtoChunk protochunk = (ProtoChunk)p_347656_;
++                    ServerLevel serverlevel = p_347565_.level();
++                    if (!(protochunk instanceof ImposterProtoChunk)) {
++                        generationchunkholder.replaceProtoChunk(new ImposterProtoChunk(levelchunk, false));
++                    }
++                    levelchunk.setFullStatus(generationchunkholder::getFullStatus);
++                    try {
++                        generationchunkholder.currentlyLoading = levelchunk; // Neo: bypass future chain
++                        levelchunk.runPostLoad();
++                    } finally {
++                        generationchunkholder.currentlyLoading = null;
++                    }
++                    levelchunk.setLoaded(true);
++                    try {
++                        generationchunkholder.currentlyLoading = levelchunk; // Neo: bypass future chain
++                        levelchunk.registerAllBlockEntitiesAfterLevelLoad();
++                        levelchunk.registerTickContainerInLevel(serverlevel);
++                        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(new net.neoforged.neoforge.event.level.ChunkEvent.Load(levelchunk, !(protochunk instanceof ImposterProtoChunk)));
++                    } finally {
++                        generationchunkholder.currentlyLoading = null;
++                    }
++                    return levelchunk;
++                },
++                p_347404_ -> p_347565_.mainThreadMailBox()
++                        .tell(ChunkTaskPriorityQueueSorter.message(p_347404_, chunkpos.toLong(), generationchunkholder::getTicketLevel))
+         );
+     }
+ 

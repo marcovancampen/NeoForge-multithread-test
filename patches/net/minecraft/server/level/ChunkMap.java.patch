@@ -1,5 +1,42 @@
 --- a/net/minecraft/server/level/ChunkMap.java
 +++ b/net/minecraft/server/level/ChunkMap.java
+@@ -142,7 +_,10 @@
+     private int serverViewDistance;
+     private final WorldGenContext worldGenContext;
+ 
++    private final java.util.concurrent.ExecutorService lightExecutor;
++
+     public ChunkMap(
++
+         ServerLevel p_214836_,
+         LevelStorageSource.LevelStorageAccess p_214837_,
+         DataFixer p_214838_,
+@@ -156,6 +_,8 @@
+         Supplier<DimensionDataStorage> p_214846_,
+         int p_214847_,
+         boolean p_214848_
++
++
+     ) {
+         super(
+             new RegionStorageInfo(p_214837_.getLevelId(), p_214836_.dimension(), "chunk"),
+@@ -180,7 +_,15 @@
+         ProcessorHandle<Runnable> processorhandle = ProcessorHandle.of("main", p_214841_::tell);
+         this.progressListener = p_214844_;
+         this.chunkStatusListener = p_214845_;
+-        ProcessorMailbox<Runnable> processormailbox = ProcessorMailbox.create(p_214840_, "light");
++
++        this.lightExecutor = java.util.concurrent.Executors.newSingleThreadExecutor(
++                new com.google.common.util.concurrent.ThreadFactoryBuilder()
++                        .setNameFormat("Chunk-Light-Engine-" + p_214836_.dimension().location().getPath())
++                        .setDaemon(true)
++                        .build()
++        );
++
++        ProcessorMailbox<Runnable> processormailbox = ProcessorMailbox.create(this.lightExecutor, "light");
+         this.queueSorter = new ChunkTaskPriorityQueueSorter(
+             ImmutableList.of(processormailbox1, processorhandle, processormailbox), p_214840_, Integer.MAX_VALUE
+         );
 @@ -395,6 +_,7 @@
                  this.modified = true;
              }
@@ -8,6 +45,14 @@
              return p_140179_;
          }
      }
+@@ -406,6 +_,7 @@
+             this.poiManager.close();
+         } finally {
+             super.close();
++            this.lightExecutor.shutdown();
+         }
+     }
+ 
 @@ -510,6 +_,7 @@
                  if (this.pendingUnloads.remove(p_140182_, p_140183_) && chunkaccess != null) {
                      if (chunkaccess instanceof LevelChunk levelchunk) {

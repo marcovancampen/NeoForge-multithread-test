@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/level/ChunkPos.java
++++ b/net/minecraft/world/level/ChunkPos.java
+@@ -72,7 +_,7 @@
+         return hash(this.x, this.z);
+     }
+ 
+-    public static int hash(int p_220344_, int p_220345_) {
++    public static int   hash(int p_220344_, int p_220345_) {
+         int i = 1664525 * p_220344_ + 1013904223;
+         int j = 1664525 * (p_220345_ ^ -559038737) + 1013904223;
+         return i ^ j;
